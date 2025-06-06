@@ -1,0 +1,112 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="bg-white rounded-lg shadow-lg p-6">
+    <!-- ヘッダー -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">音声要約アプリ</h1>
+      <%= link_to "新規録音", new_voice_record_path, class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+    </div>
+
+    <!-- 音声録音セクション -->
+    <div class="bg-gray-50 rounded-lg p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">音声録音</h2>
+      
+      <div class="flex items-center space-x-4 mb-4">
+        <button id="startRecording" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+          🎤 録音開始
+        </button>
+        <button id="stopRecording" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" disabled>
+          ⏹️ 録音停止
+        </button>
+        <span id="recordingStatus" class="text-gray-600"></span>
+      </div>
+
+      <div id="audioPreview" class="hidden mb-4">
+        <audio controls class="w-full"></audio>
+      </div>
+
+      <%= form_with model: VoiceRecord.new, local: false, id: "voice-form", class: "hidden" do |f| %>
+        <%= f.text_field :user_name, placeholder: "ユーザー名", class: "border rounded px-3 py-2 mb-2 w-full", required: true %>
+        <%= f.text_field :title, placeholder: "タイトル（自動生成されます）", class: "border rounded px-3 py-2 mb-2 w-full" %>
+        <%= f.hidden_field :original_text %>
+        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+          保存して要約を作成
+        </button>
+      <% end %>
+    </div>
+
+    <!-- 検索 -->
+    <%= form_with url: voice_records_path, method: :get, local: true, class: "mb-6" do |f| %>
+      <div class="flex space-x-2">
+        <%= f.text_field :search, placeholder: "タイトルで検索...", value: params[:search], 
+            class: "border rounded px-3 py-2 flex-1" %>
+        <%= f.submit "検索", class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+      </div>
+    <% end %>
+
+    <!-- 音声記録一覧 -->
+    <div class="grid gap-4">
+      <% if @voice_records.any? %>
+        <% @voice_records.each do |record| %>
+          <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold">
+                  <%= link_to record.title, record, class: "text-blue-600 hover:text-blue-800" %>
+                </h3>
+                <p class="text-gray-600 text-sm">
+                  <%= record.user_name %> • <%= record.recorded_at.strftime("%Y年%m月%d日 %H:%M") %>
+                </p>
+                
+                <div class="mt-2 flex space-x-2">
+                  <% if record.transcribed? %>
+                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">音声認識済み</span>
+                  <% end %>
+                  <% if record.summarized? %>
+                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">要約済み</span>
+                  <% end %>
+                </div>
+
+                <% if record.summary_text.present? %>
+                  <p class="mt-2 text-gray-700 text-sm">
+                    <%= truncate(record.summary_text, length: 150) %>
+                  </p>
+                <% end %>
+              </div>
+              
+              <div class="ml-4 flex space-x-2">
+                <%= link_to "編集", edit_voice_record_path(record), 
+                    class: "text-blue-600 hover:text-blue-800 text-sm" %>
+                <%= link_to "削除", record, method: :delete, 
+                    confirm: "本当に削除しますか？", 
+                    class: "text-red-600 hover:text-red-800 text-sm" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+        
+        <!-- ページネーション -->
+        <div class="mt-6">
+          <%= paginate @voice_records if respond_to?(:paginate) %>
+        </div>
+      <% else %>
+        <div class="text-center py-8 text-gray-500">
+          <p>まだ音声記録がありません。</p>
+          <p>「新規録音」をクリックして始めましょう！</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+// 音声録音機能は次のステップで実装予定
+document.addEventListener('DOMContentLoaded', function() {
+  const startButton = document.getElementById('startRecording');
+  const stopButton = document.getElementById('stopRecording');
+  const statusElement = document.getElementById('recordingStatus');
+  
+  startButton.addEventListener('click', function() {
+    alert('音声録音機能は準備中です。次のステップで実装予定です。');
+  });
+});
+</script>

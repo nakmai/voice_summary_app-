@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # ソースコードをマウント（開発時の変更を即座に反映）
+      - .:/app
+      # SQLiteデータベースを永続化
+      - ./db:/app/db
+      # ログファイルを永続化
+      - ./log:/app/log
+    environment:
+      - RAILS_ENV=development
+    stdin_open: true
+    tty: true 

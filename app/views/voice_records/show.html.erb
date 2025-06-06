@@ -1,0 +1,175 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+    <!-- ヘッダー -->
+    <div class="flex justify-between items-start mb-6">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800"><%= @voice_record.title %></h1>
+        <p class="text-gray-600 mt-2">
+          <span class="font-medium"><%= @voice_record.user_name %></span> • 
+          <%= @voice_record.recorded_at.strftime("%Y年%m月%d日 %H:%M") %>
+        </p>
+        
+        <div class="mt-3 flex space-x-2">
+          <% if @voice_record.transcribed? %>
+            <span class="bg-green-100 text-green-800 text-sm px-2 py-1 rounded">音声認識済み</span>
+          <% end %>
+          <% if @voice_record.summarized? %>
+            <span class="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded">要約済み</span>
+          <% end %>
+        </div>
+      </div>
+      
+      <div class="flex space-x-3">
+        <%= link_to "編集", edit_voice_record_path(@voice_record), 
+            class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+        <%= link_to "削除", @voice_record, method: :delete, 
+            confirm: "本当に削除しますか？", 
+            class: "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" %>
+        <%= link_to "一覧に戻る", voice_records_path, 
+            class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" %>
+      </div>
+    </div>
+
+    <!-- 話者情報 -->
+    <% if @voice_record.speakers.present? %>
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">話者</h3>
+        <div class="flex flex-wrap gap-2">
+          <% @voice_record.speakers_list.each do |speaker| %>
+            <span class="bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-full"><%= speaker %></span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- 音声認識テキスト -->
+    <% if @voice_record.original_text.present? %>
+      <div class="mb-8">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-lg font-semibold text-gray-800">音声認識テキスト</h3>
+          <button onclick="copyToClipboard('original-text')" 
+                  class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-3 py-1 rounded">
+            📋 コピー
+          </button>
+        </div>
+        <div id="original-text" class="bg-gray-50 rounded-lg p-4 border">
+          <p class="text-gray-800 leading-relaxed whitespace-pre-wrap"><%= @voice_record.original_text %></p>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- 要約 -->
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-semibold text-gray-800">要約</h3>
+        <div class="flex space-x-2">
+          <% if @voice_record.summary_text.present? %>
+            <button onclick="copyToClipboard('summary-text')" 
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-3 py-1 rounded">
+              📋 要約をコピー
+            </button>
+            <button onclick="copyNotionFormat()" 
+                    class="bg-blue-100 hover:bg-blue-200 text-blue-700 text-sm px-3 py-1 rounded">
+              📝 Notion形式でコピー
+            </button>
+          <% end %>
+          <% unless @voice_record.summarized? %>
+            <button onclick="generateSummary()" 
+                    class="bg-green-500 hover:bg-green-700 text-white text-sm px-3 py-1 rounded">
+              🤖 AI要約生成
+            </button>
+          <% end %>
+        </div>
+      </div>
+      
+      <% if @voice_record.summary_text.present? %>
+        <div id="summary-text" class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <p class="text-gray-800 leading-relaxed whitespace-pre-wrap"><%= @voice_record.summary_text %></p>
+        </div>
+      <% else %>
+        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <p class="text-gray-500 text-center">まだ要約が生成されていません。</p>
+          <% if @voice_record.original_text.present? %>
+            <p class="text-sm text-gray-400 text-center mt-2">
+              「AI要約生成」ボタンをクリックして要約を作成できます。
+            </p>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Notion用フォーマット表示 -->
+    <div id="notion-format" class="hidden mb-8">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-semibold text-gray-800">Notion用フォーマット</h3>
+        <button onclick="copyToClipboard('notion-content')" 
+                class="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-3 py-1 rounded">
+          📋 Notion形式をコピー
+        </button>
+      </div>
+      <div id="notion-content" class="bg-green-50 rounded-lg p-4 border border-green-200">
+        <pre class="text-sm text-gray-800 whitespace-pre-wrap" id="notion-text"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function copyToClipboard(elementId) {
+  const element = document.getElementById(elementId);
+  const text = element.innerText || element.textContent;
+  
+  navigator.clipboard.writeText(text).then(function() {
+    // 成功時の表示
+    showMessage('コピーしました！', 'success');
+  }, function(err) {
+    // 失敗時のフォールバック
+    console.error('コピーに失敗しました: ', err);
+    showMessage('コピーに失敗しました', 'error');
+  });
+}
+
+function copyNotionFormat() {
+  const title = '<%= @voice_record.title %>';
+  const date = '<%= @voice_record.recorded_at.strftime("%Y年%m月%d日 %H:%M") %>';
+  const speakers = '<%= @voice_record.speakers_list.join(", ") if @voice_record.speakers.present? %>';
+  const summary = '<%= j(@voice_record.summary_text) if @voice_record.summary_text.present? %>';
+  
+  let notionText = `# ${title}\n\n`;
+  notionText += `**日時:** ${date}\n`;
+  if (speakers) {
+    notionText += `**話者:** ${speakers}\n`;
+  }
+  notionText += `\n## 要約\n${summary}`;
+  
+  document.getElementById('notion-text').textContent = notionText;
+  document.getElementById('notion-format').classList.remove('hidden');
+  
+  navigator.clipboard.writeText(notionText).then(function() {
+    showMessage('Notion形式でコピーしました！', 'success');
+  }, function(err) {
+    console.error('コピーに失敗しました: ', err);
+    showMessage('コピーに失敗しました', 'error');
+  });
+}
+
+function generateSummary() {
+  // AI要約生成機能は次のステップで実装
+  alert('AI要約生成機能は準備中です。\n手動で編集画面から要約を入力できます。');
+}
+
+function showMessage(message, type) {
+  // フラッシュメッセージ風の表示
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `fixed top-4 right-4 px-4 py-2 rounded z-50 ${
+    type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+  }`;
+  messageDiv.textContent = message;
+  
+  document.body.appendChild(messageDiv);
+  
+  setTimeout(() => {
+    messageDiv.remove();
+  }, 3000);
+}
+</script>
