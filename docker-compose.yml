@@ -14,5 +14,7 @@ services:
       - ./log:/app/log
     environment:
       - RAILS_ENV=development
+    env_file:
+      - .env
     stdin_open: true
     tty: true 
